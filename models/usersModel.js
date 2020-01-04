@@ -5,7 +5,7 @@ const errors = require('../errors/errors');
 class usersModel {
 	static async createUser(nickname, profile) {
 		try {
-			return await db.manyOrNone('INSERT INTO users(nickname, email, fullname, about) ' +
+			return await db.oneOrNone('INSERT INTO users(nickname, email, fullname, about) ' +
 				'VALUES(${nickname}, ${profile.email}, ${profile.fullname}, ${profile.about}) RETURNING *', {
 				profile: profile, nickname: nickname
 			});
