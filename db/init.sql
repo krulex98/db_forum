@@ -1,6 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS CITEXT;
 
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS forums;
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -8,4 +9,13 @@ CREATE TABLE users (
     fullname TEXT NOT NULL,
     email CITEXT NOT NULL UNIQUE,
     about TEXT
+);
+
+CREATE TABLE forums (
+    id SERIAL PRIMARY KEY,
+    slug CITEXT NOT NULL UNIQUE,
+    posts BIGINT DEFAULT 0,
+    threads BIGINT DEFAULT 0,
+    title TEXT NOT NULL,
+    username CITEXT REFERENCES users (nickname) NOT NULL
 );

@@ -10,10 +10,13 @@ app.use(bodyParser.json());
 const userRouter = require('./router/userRouter');
 app.use('/api/user', userRouter);
 
+const forumRouter = require('./router/forumRouter');
+app.use('/api/forum', forumRouter);
+
 app.listen(3000, function () {
 	console.log('Example app listening on port 3000!');
 });
 
 //  TODO linter EsLint
 
-//  TODO alias for paths
+//  TODO require -> import, alias for paths
