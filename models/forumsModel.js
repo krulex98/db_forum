@@ -47,6 +47,34 @@ class forumsModel {
 			throw new errors.NotFoundError();
 		}
 	}
+
+	static async getThreads(forumSlug, params) {
+		try {
+			const forum = await db.one('SELECT * FROM forums WHERE slug = ${forumSlug}', {forumSlug: forumSlug});
+			let query = 'SELECT username as author, created, forum_slug as forum, id, message, title, slug, votes FROM threads WHERE forum_slug = ${forum.slug} ';
+
+			if (params.desc && params.desc === 'true') {
+				if (params.since) {
+					query += 'AND created <= ${params.since} ';
+				}
+				query += 'ORDER BY created DESC ';
+			} else {
+				if (params.since) {
+					query += 'AND created >= ${params.since} ';
+				}
+				query += 'ORDER BY created ';
+			}
+
+			if (params.limit) {
+				query += 'LIMIT ${params.limit} ';
+			}
+
+			return await db.manyOrNone(query, {forum: forum, params: params});
+
+		} catch(error) {
+			throw new errors.NotFoundError();
+		}
+	}
 }
 
 module.exports = forumsModel;

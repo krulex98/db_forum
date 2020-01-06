@@ -26,7 +26,7 @@ CREATE TABLE threads (
     slug CITEXT UNIQUE,
     username CITEXT REFERENCES users (nickname) NOT NULL,
     forum_slug CITEXT REFERENCES forums (slug) NOT NULL,
-    created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     message TEXT,
     title TEXT NOT NULL UNIQUE,
     votes INTEGER DEFAULT 0

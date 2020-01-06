@@ -58,6 +58,24 @@ class forumController {
 			res.status(500).json({ error: error});
 		}
 	}
+
+	static async getThreads(req, res) {
+		const forumSlug = req.params.slug;
+		const {limit, since, desc} = req.query;
+		const params = {limit, since, desc};
+
+		try {
+			const threads = await model.getThreads(forumSlug, params);
+			res.status(200).json(threads);
+		} catch (error) {
+			if (error instanceof errors.NotFoundError) {
+				res.status(404).json({message: error.message});
+				return;
+			}
+
+			res.status(500).json({ error: error});
+		}
+	}
 }
 
 module.exports = forumController;
