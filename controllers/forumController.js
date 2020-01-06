@@ -42,6 +42,22 @@ class forumController {
 			res.status(500).json({ error: error});
 		}
 	}
+
+	static async getDetails(req, res) {
+		const forumSlug = req.params.slug;
+
+		try {
+			const details = await model.getDetails(forumSlug);
+			res.status(200).json(details);
+		} catch (error) {
+			if (error instanceof errors.NotFoundError) {
+				res.status(404).json({message: error.message});
+				return;
+			}
+
+			res.status(500).json({ error: error});
+		}
+	}
 }
 
 module.exports = forumController;
