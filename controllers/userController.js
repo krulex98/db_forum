@@ -37,7 +37,12 @@ class userController {
 
 	static async updateProfile(req, res) {
 		const nickname = req.params.nickname;
-		const profile = req.body;
+		const profile = {
+			fullname: null,
+			about: null,
+			email: null,
+			...req.body,
+		};
 
 		try {
 			const user = await usersModel.updateProfile(nickname, profile);

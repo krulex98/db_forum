@@ -18,6 +18,30 @@ class forumController {
 			res.status(500).json({ error: error});
 		}
 	}
+
+	static async createThread(req, res) {
+		const forumSlug = req.params.slug;
+		const thread = {
+			slug: null,
+			created: null,
+			...req.body,
+		};
+
+		try {
+			const savedThread = await model.createThread(forumSlug, thread);
+			res.status(201).json(savedThread);
+		} catch (error) {
+			if (error instanceof errors.NotFoundError) {
+				res.status(404).json({message: error.message});
+				return;
+			}
+			if (error instanceof errors.AlreadyExistsError) {
+				res.status(409).json(error.data);
+				return;
+			}
+			res.status(500).json({ error: error});
+		}
+	}
 }
 
 module.exports = forumController;

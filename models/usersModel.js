@@ -28,7 +28,7 @@ class usersModel {
 
 	static async updateProfile(nickname, profile) {
 		try {
-			return await db.one('UPDATE users SET about = ${profile.about}, email = ${profile.email}, fullname = ${profile.fullname} ' +
+			return await db.one('UPDATE users SET about = COALESCE(${profile.about}, about), email = COALESCE(${profile.email}, email), fullname = COALESCE(${profile.fullname}, fullname) ' +
 				'WHERE nickname = ${nickname} RETURNING *',{
 				profile: profile, nickname: nickname
 			});
