@@ -27,6 +27,21 @@ class threadController {
 			res.status(500).json({ error: error});
 		}
 	}
+
+	static async getDetails(req, res) {
+		const slugOrId = req.params.slug_or_id;
+
+		try {
+			const thread = await model.getDetails(slugOrId);
+			res.status(200).json(thread);
+		} catch (error) {
+			if (error instanceof errors.NotFoundError) {
+				res.status(404).json({message: error.message});
+				return;
+			}
+			res.status(500).json({ error: error});
+		}
+	}
 }
 
 module.exports = threadController;

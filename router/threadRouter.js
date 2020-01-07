@@ -4,5 +4,6 @@ const express = require('express');
 const router = express.Router();
 
 router.post('/:slug_or_id/create', controller.createPost);
+router.get('/:slug_or_id/details', controller.getDetails);
 
 module.exports = router;

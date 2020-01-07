@@ -59,6 +59,22 @@ class threadsModel {
 		return savedPosts;
 
 	}
+
+	static async getDetails(slugOrId) {
+		const numbersPattern = '^[0-9]+$';
+		let threadQuery = 'SELECT username as author, created, forum_slug as forum, id, message, title, slug FROM threads ';
+		if (slugOrId.match(numbersPattern)) {
+			threadQuery += 'WHERE id = ${slugOrId}';
+		} else {
+			threadQuery += 'WHERE slug = ${slugOrId}';
+		}
+
+		try {
+			return await db.one(threadQuery, {slugOrId: slugOrId});
+		} catch (error) {
+			throw new errors.NotFoundError();
+		}
+	}
 }
 
 module.exports = threadsModel;
