@@ -75,6 +75,23 @@ class threadsModel {
 			throw new errors.NotFoundError();
 		}
 	}
+
+	static async updateDetails(slugOrId, thread) {
+		let query = 'UPDATE threads SET message = COALESCE(${thread.message}, message), title = COALESCE(${thread.title}, title)';
+		const numbersPattern = '^[0-9]+$';
+		if (slugOrId.match(numbersPattern)) {
+			query += 'WHERE id = ${slugOrId} ';
+		} else {
+			query += 'WHERE slug = ${slugOrId} ';
+		}
+		query += 'RETURNING username as author, created, forum_slug as forum, id, message, title, slug';
+
+		try {
+			return await db.one(query, {thread: thread, slugOrId: slugOrId});
+		} catch (error) {
+			throw new errors.NotFoundError();
+		}
+	}
 }
 
 module.exports = threadsModel;

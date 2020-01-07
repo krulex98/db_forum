@@ -42,6 +42,26 @@ class threadController {
 			res.status(500).json({ error: error});
 		}
 	}
+
+	static async updateDetails(req, res) {
+		const slugOrId = req.params.slug_or_id;
+		const thread = {
+			message: null,
+			title: null,
+			...req.body
+		};
+
+		try {
+			const updatedThread = await model.updateDetails(slugOrId, thread);
+			res.status(200).json(updatedThread);
+		} catch (error) {
+			if (error instanceof errors.NotFoundError) {
+				res.status(404).json({message: error.message});
+				return;
+			}
+			res.status(500).json({ error: error});
+		}
+	}
 }
 
 module.exports = threadController;

@@ -13,7 +13,6 @@ class usersModel {
 		catch (error) {
 			const users = await db.manyOrNone(`select * from users where nickname = '${nickname}' or email = '${profile.email}'`);
 			throw new errors.AlreadyExistsError(users);
-			// TODO error
 		}
 	}
 
