@@ -16,6 +16,9 @@ app.use('/api/forum', forumRouter);
 const threadRouter = require('./router/threadRouter');
 app.use('/api/thread', threadRouter);
 
+const postRouter = require('./router/postRouter');
+app.use('/api/post', postRouter);
+
 app.listen(3000, function () {
 	console.log('Example app listening on port 3000!');
 });
