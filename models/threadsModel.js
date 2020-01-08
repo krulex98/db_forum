@@ -1,4 +1,3 @@
-const pgp = require('pg-promise');
 const db = require('../db/connection');
 const errors = require('../errors/errors');
 

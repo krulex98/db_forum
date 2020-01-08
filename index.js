@@ -19,10 +19,9 @@ app.use('/api/thread', threadRouter);
 const postRouter = require('./router/postRouter');
 app.use('/api/post', postRouter);
 
+const serviceRouter = require('./router/serviceRouter');
+app.use('/api/service', serviceRouter);
+
 app.listen(3000, function () {
 	console.log('Example app listening on port 3000!');
 });
-
-//  TODO linter EsLint
-
-//  TODO require -> import, alias for paths
