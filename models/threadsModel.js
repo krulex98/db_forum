@@ -56,8 +56,15 @@ class threadsModel {
 		savedPosts.forEach(savedPost => {
 			savedPost.forum = thread.forum_slug;
 		});
-		return savedPosts;
 
+		try {
+			await db.one('UPDATE forums SET posts = posts + ${posts.length} WHERE slug = ${thread.forum_slug} RETURNING *', {
+				posts: posts, thread: thread
+			});
+		} catch (error) {
+			console.log(error);
+		}
+		return savedPosts;
 	}
 
 	static async getDetails(slugOrId) {

@@ -33,6 +33,23 @@ CREATE TABLE threads (
     votes INTEGER DEFAULT 0
 );
 
+CREATE OR REPLACE FUNCTION insertThread()
+RETURNS TRIGGER AS
+$BODY$
+BEGIN
+    UPDATE forums SET threads = threads + 1
+    WHERE slug = new.forum_slug;
+    RETURN new;
+END;
+$BODY$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER insertThread
+AFTER INSERT
+ON threads
+FOR EACH ROW
+EXECUTE PROCEDURE insertThread();
+
 CREATE TABLE posts (
     id SERIAL PRIMARY KEY,
     username CITEXT REFERENCES users (nickname) NOT NULL,
