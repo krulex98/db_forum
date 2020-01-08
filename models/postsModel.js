@@ -73,7 +73,6 @@ class postsModel {
 
 			return result;
 		} catch (error) {
-			console.log(error);
 			throw new errors.NotFoundError();
 		}
 	}

@@ -4,6 +4,7 @@ DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS forums CASCADE;
 DROP TABLE IF EXISTS threads CASCADE;
 DROP TABLE IF EXISTS posts CASCADE;
+DROP TABLE IF EXISTS votes CASCADE;
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -59,3 +60,52 @@ CREATE TABLE posts (
     parent_id INTEGER REFERENCES posts (id),
     thread_id INTEGER REFERENCES threads (id) NOT NULL
 );
+
+CREATE TABLE votes (
+    id SERIAL PRIMARY KEY,
+    username CITEXT REFERENCES users (nickname) NOT NULL,
+    thread_id INTEGER REFERENCES threads (id) NOT NULL,
+    voice INTEGER,
+    CONSTRAINT unique_vote UNIQUE (username, thread_id)
+);
+
+CREATE OR REPLACE FUNCTION insertVote()
+RETURNS TRIGGER AS
+$BODY$
+    BEGIN
+        UPDATE threads SET votes = votes + new.voice
+        WHERE id = new.thread_id;
+        RETURN new;
+    END;
+$BODY$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER insertVote
+AFTER INSERT
+ON votes
+FOR EACH ROW
+EXECUTE PROCEDURE insertVote();
+
+
+CREATE OR REPLACE FUNCTION updateVote()
+RETURNS TRIGGER AS
+$BODY$
+    BEGIN
+        IF old.voice = -1 AND new.voice = 1 THEN
+            UPDATE threads SET votes = votes + 2
+            WHERE id = new.thread_id;
+        END IF;
+        IF old.voice = 1 AND new.voice = -1 THEN
+            UPDATE threads SET votes = votes - 2
+            WHERE id = new.thread_id;
+        END IF;
+        RETURN NEW;
+    END;
+$BODY$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER updateVote
+AFTER UPDATE
+ON votes
+FOR EACH ROW
+EXECUTE PROCEDURE updateVote();

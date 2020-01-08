@@ -68,7 +68,7 @@ class threadsModel {
 
 	static async getDetails(slugOrId) {
 		const numbersPattern = '^[0-9]+$';
-		let threadQuery = 'SELECT username as author, created, forum_slug as forum, id, message, title, slug FROM threads ';
+		let threadQuery = 'SELECT username as author, created, forum_slug as forum, id, message, title, slug, votes FROM threads ';
 		if (slugOrId.match(numbersPattern)) {
 			threadQuery += 'WHERE id = ${slugOrId}';
 		} else {
@@ -98,6 +98,42 @@ class threadsModel {
 			throw new errors.NotFoundError();
 		}
 	}
+
+	static async voteBySlug(threadSlug, vote) {
+		try {
+			 await db.any('INSERT INTO votes(username, thread_id, voice) VALUES (' +
+				'${vote.nickname}, ' +
+				'(SELECT id FROM threads WHERE slug = ${threadSlug}), ' +
+				'${vote.voice}) ' +
+				'ON CONFLICT ON CONSTRAINT unique_vote ' +
+				'DO UPDATE SET voice = ${vote.voice} ' +
+				'WHERE votes.thread_id = (SELECT id FROM threads WHERE slug = ${threadSlug}) AND votes.username = ${vote.nickname} ' +
+				'RETURNING votes.id',
+				{threadSlug: threadSlug, vote: vote});
+			 return await this.getDetails(threadSlug);
+		} catch (error) {
+			throw new errors.NotFoundError();
+		}
+	}
+
+	static async voteById(threadId, vote) {
+		try {
+			await db.any('INSERT INTO votes(username, thread_id, voice) VALUES (' +
+				'${vote.nickname}, ' +
+				'${threadId}, ' +
+				'${vote.voice}) ' +
+				'ON CONFLICT ON CONSTRAINT unique_vote ' +
+				'DO UPDATE SET voice = ${vote.voice} ' +
+				'WHERE votes.thread_id = ${threadId} AND votes.username = ${vote.nickname} ' +
+				'RETURNING votes.id',
+				{threadId: threadId, vote: vote});
+			return await this.getDetails(threadId);
+		} catch (error) {
+			throw new errors.NotFoundError();
+		}
+	}
+
+
 }
 
 module.exports = threadsModel;

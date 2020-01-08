@@ -62,6 +62,28 @@ class threadController {
 			res.status(500).json({ error: error});
 		}
 	}
+
+	static async vote(req, res) {
+		const slugOrId = req.params.slug_or_id;
+		const vote = req.body;
+
+		const numbersPattern = '^[0-9]+$';
+		try {
+			let thread = {};
+			if (slugOrId.match(numbersPattern)) {
+				thread = await model.voteById(slugOrId, vote);
+			} else {
+				thread = await model.voteBySlug(slugOrId, vote);
+			}
+			res.status(200).json(thread);
+		} catch (error) {
+			if (error instanceof errors.NotFoundError) {
+				res.status(404).json({message: error.message});
+				return;
+			}
+			res.status(500).json(error);
+		}
+	}
 }
 
 module.exports = threadController;

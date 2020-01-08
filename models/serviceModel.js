@@ -17,16 +17,8 @@ class serviceModel {
 	}
 
 	static async clear() {
-		return await db.any('TRUNCATE posts, threads, forums, users');
+		return await db.any('TRUNCATE votes, posts, threads, forums, users');
 	}
 }
-
-const getCounterByName = (items, name) => {
-	const item = items.find(item => item.relname === name);
-	if (item) {
-		return +item.n_live_tup;
-	}
-	return null;
-};
 
 module.exports = serviceModel;
