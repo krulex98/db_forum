@@ -4,7 +4,7 @@ const errors = require('../errors/errors');
 class postsModel {
 	static async getDetails(id, params) {
 		try {
-			let query = 'SELECT p.username as post_author, p.created as post_created, p.id as post_id, p.isEdited as post_isEdited, ' +
+			let query = 'SELECT p.username as post_author, p.created as post_created, p.id as post_id, p.isedited as post_isedited, ' +
 				'p.message as post_message, p.parent_id as post_parent, p.thread_id as post_thread, ' +
 				't.forum_slug as post_forum ' +
 				(params.user ? ', u.about as user_about, u.email as user_email, u.fullname as user_fullname, u.nickname as user_nickname ' : '') +
@@ -25,7 +25,8 @@ class postsModel {
 					message: relatedPost.post_message,
 					parent: relatedPost.post_parent,
 					thread: relatedPost.post_thread,
-					forum: relatedPost.post_forum
+					forum: relatedPost.post_forum,
+					isEdited: relatedPost.post_isedited
 				}
 			};
 
@@ -73,6 +74,25 @@ class postsModel {
 			return result;
 		} catch (error) {
 			console.log(error);
+			throw new errors.NotFoundError();
+		}
+	}
+
+	static async updateDetails(id, post) {
+		try {
+			let updatedPost = await db.one('UPDATE posts ' +
+				'SET message = COALESCE(${post.message}, posts.message), ' +
+				'isEdited = COALESCE(${post.message}, posts.message) <> posts.message ' +
+				'FROM threads ' +
+				'WHERE threads.id = posts.thread_id AND posts.id = ${id} ' +
+				'RETURNING posts.username as author, posts.created, posts.id, posts.isEdited, posts.message, ' +
+				'posts.parent_id as parent, posts.thread_id as thread, threads.forum_slug as forum ', {
+				id: id, post: post
+			});
+			updatedPost['isEdited'] = updatedPost.isedited;
+			delete updatedPost.isedited;
+			return updatedPost;
+		} catch (error) {
 			throw new errors.NotFoundError();
 		}
 	}
