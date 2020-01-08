@@ -75,6 +75,46 @@ class forumsModel {
 			throw new errors.NotFoundError();
 		}
 	}
+
+	static async getUsers(forumSlug, params) {
+		try {
+			const forum = await db.one('SELECT * FROM forums WHERE slug = ${forumSlug}', {forumSlug: forumSlug});
+			let query = 'SELECT DISTINCT result.* FROM (' +
+				'SELECT u.email, u.nickname, u.fullname, u.about, u.id ' +
+				'FROM users u ' +
+				'JOIN threads t ' +
+				'ON u.nickname = t.username ' +
+				'WHERE t.forum_slug = ${forum.slug} ' +
+				'UNION ' +
+				'SELECT u.email, u.nickname, u.fullname, u.about, u.id ' +
+				'FROM users u ' +
+				'JOIN posts p ' +
+				'JOIN threads t ON p.thread_id = t.id ' +
+				'ON u.nickname = p.username ' +
+				'WHERE t.forum_slug = ${forum.slug})  as result ';
+
+			if (params.desc && params.desc === 'true') {
+				if (params.since) {
+					query += 'WHERE result.nickname < ${params.since} ';
+				}
+				query += 'ORDER BY result.nickname DESC ';
+			} else {
+				if (params.since) {
+					query += 'WHERE result.nickname > ${params.since} ';
+				}
+				query += 'ORDER BY result.nickname ';
+			}
+
+			if (params.limit) {
+				query += 'LIMIT ${params.limit} ';
+			}
+			console.log(query);
+			return await db.manyOrNone(query, {forum: forum, params: params});
+		} catch (error) {
+			console.log(error);
+			throw new errors.NotFoundError();
+		}
+	}
 }
 
 module.exports = forumsModel;

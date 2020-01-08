@@ -8,7 +8,7 @@ DROP TABLE IF EXISTS votes CASCADE;
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    nickname CITEXT NOT NULL UNIQUE,
+    nickname CITEXT COLLATE "ucs_basic" NOT NULL UNIQUE,
     fullname TEXT NOT NULL,
     email CITEXT NOT NULL UNIQUE,
     about TEXT
