@@ -84,6 +84,29 @@ class threadController {
 			res.status(500).json(error);
 		}
 	}
+
+	static async getPosts(req, res) {
+		const slugOrId = req.params.slug_or_id;
+		const {limit, since, sort, desc } = req.query;
+		const params = {limit, since, sort, desc};
+
+		const numbersPattern = '^[0-9]+$';
+		try {
+			let posts;
+			if (slugOrId.match(numbersPattern)) {
+				posts = await model.getPostsById(slugOrId, params);
+			} else {
+				posts = await model.getPostsBySlug(slugOrId, params);
+			}
+			res.status(200).json(posts);
+		} catch(error) {
+			if (error instanceof errors.NotFoundError) {
+				res.status(404).json({message: error.message});
+				return;
+			}
+			res.status(500).json(error);
+		}
+	}
 }
 
 module.exports = threadController;

@@ -32,6 +32,7 @@ class forumController {
 			const savedThread = await model.createThread(forumSlug, thread);
 			res.status(201).json(savedThread);
 		} catch (error) {
+			console.log(error);
 			if (error instanceof errors.NotFoundError) {
 				res.status(404).json({message: error.message});
 				return;

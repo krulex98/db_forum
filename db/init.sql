@@ -30,7 +30,7 @@ CREATE TABLE threads (
     forum_slug CITEXT REFERENCES forums (slug) NOT NULL,
     created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     message TEXT,
-    title TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
     votes INTEGER DEFAULT 0
 );
 

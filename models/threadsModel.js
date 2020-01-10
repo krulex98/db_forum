@@ -133,7 +133,13 @@ class threadsModel {
 		}
 	}
 
+	static async getPostsBySlug(slug, params) {
 
+	}
+
+	static async getPostsById(id, params) {
+
+	}
 }
 
 module.exports = threadsModel;
