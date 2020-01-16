@@ -100,6 +100,7 @@ class threadController {
 			}
 			res.status(200).json(posts);
 		} catch(error) {
+			console.log(error);
 			if (error instanceof errors.NotFoundError) {
 				res.status(404).json({message: error.message});
 				return;
