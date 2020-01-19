@@ -141,6 +141,21 @@ class threadsModel {
 			throw new errors.NotFoundError();
 		}
 
+		return await this.getPosts(thread, params);
+	}
+
+	static async getPostsById(id, params) {
+		let thread;
+		try {
+			thread = await db.one('SELECT * FROM threads WHERE id = ${id}', {id: id});
+		} catch (error) {
+			throw new errors.NotFoundError();
+		}
+
+		return await this.getPosts(thread, params);
+	}
+
+	static async getPosts(thread, params) {
 		let posts = [];
 		try {
 			switch (params.sort) {
@@ -155,37 +170,6 @@ class threadsModel {
 			}
 		}
 		catch (error) {
-			throw new Error(error);
-		}
-		posts.forEach(post => {
-			post.isEdited = post.isedited;
-			post.forum = thread.forum_slug;
-			delete post.isedited;
-		});
-		return posts;
-	}
-
-	static async getPostsById(id, params) {
-		let thread;
-		try {
-			thread = await db.one('SELECT * FROM threads WHERE id = ${id}', {id: id});
-		} catch (error) {
-			throw new errors.NotFoundError();
-		}
-
-		let posts = [];
-		try {
-			switch (params.sort) {
-				case 'tree':
-					posts = await this.getPostsTree(thread, params);
-					break;
-				case 'parent_tree':
-					posts = await this.getPostsParentTree(thread, params);
-					break;
-				default:
-					posts = await this.getPostsFlat(thread, params);
-			}
-		} catch (error) {
 			throw new Error(error);
 		}
 		posts.forEach(post => {
@@ -234,15 +218,14 @@ class threadsModel {
 			'JOIN recursia ' +
 			'ON posts.parent_id = recursia.id ' +
 			') ' +
-			'SELECT recursia.id, recursia.message, recursia.created, recursia.parent, recursia.thread, recursia.author, ' +
-			'dense_rank() over (ORDER BY COALESCE(recursia.path[1])) as rank ' +
+			'SELECT recursia.id, recursia.message, recursia.created, recursia.parent, recursia.thread, recursia.author ' +
 			'FROM recursia ';
 
 		if (params.desc && params.desc === 'true') {
 			if (params.since) {
 				query += 'WHERE recursia.path  < (SELECT path FROM recursia WHERE id = ${since}) ';
 			}
-			query += 'ORDER BY recursia.path DESC';
+			query += 'ORDER BY recursia.path DESC ';
 		} else {
 			if (params.since) {
 				query += 'WHERE recursia.path  > (SELECT path FROM recursia WHERE id = ${since}) ';
@@ -260,7 +243,37 @@ class threadsModel {
 	}
 
 	static async getPostsParentTree(thread, params) {
-		return [];
+		const limit = +params.limit || 10000;
+
+		let query = 'WITH RECURSIVE recursia AS ( ' +
+			'    SELECT username as author, created, id, isedited, message, parent_id as parent, ' +
+			'           thread_id as thread, ARRAY [id] as path, ' +
+			'           dense_rank() over (ORDER BY id ' + (params.desc === 'true' ? ' DESC ' : '') + ' ) as rank ' +
+			'    FROM posts ' +
+			'    WHERE parent_id IS NULL AND thread_id = ${thread.id} ' +
+			'    UNION ' +
+			'    SELECT posts.username as author, posts.created, posts.id, posts.isedited, posts.message, ' +
+			'           posts.parent_id as parent, posts.thread_id as thread, array_append(recursia.path, posts.id) as path, ' +
+			'           recursia.rank ' +
+			'    FROM posts ' +
+			'    JOIN recursia ON posts.parent_id = recursia.id ' +
+			') ' +
+			'SELECT recursia.id, recursia.message, recursia.created, recursia.parent, recursia.thread, recursia.author, recursia.rank, recursia.path ' +
+			'FROM recursia ';
+
+		if (params.since) {
+			query += 'JOIN recursia r ON r.id = ${since} ' +
+				'WHERE recursia.rank <= ${limit} + r.rank ' +
+				'AND (recursia.rank > r.rank OR recursia.rank = r.rank AND recursia.path > r.path) ' +
+				'ORDER BY recursia.path[1]' + (params.desc === 'true' ? ' DESC ' : '') + ', array_remove(recursia.path, recursia.path[1])';
+		} else {
+			query += 'WHERE recursia.rank <= ${limit} ' +
+				'ORDER BY recursia.path[1] '  + (params.desc === 'true' ? ' DESC ' : '') + ', array_remove(recursia.path, recursia.path[1])';
+		}
+
+		console.log(query);
+
+		return await db.manyOrNone(query, {thread: thread, desc: params.desc, limit: limit, since: +params.since});
 	}
 }
 
