@@ -79,30 +79,21 @@ class forumsModel {
 	static async getUsers(forumSlug, params) {
 		try {
 			const forum = await db.one('SELECT * FROM forums WHERE slug = ${forumSlug}', {forumSlug: forumSlug});
-			let query = 'SELECT DISTINCT result.* FROM (' +
-				'SELECT u.email, u.nickname, u.fullname, u.about, u.id ' +
-				'FROM users u ' +
-				'JOIN threads t ' +
-				'ON u.nickname = t.username ' +
-				'WHERE t.forum_slug = ${forum.slug} ' +
-				'UNION ' +
-				'SELECT u.email, u.nickname, u.fullname, u.about, u.id ' +
-				'FROM users u ' +
-				'JOIN posts p ' +
-				'JOIN threads t ON p.thread_id = t.id ' +
-				'ON u.nickname = p.username ' +
-				'WHERE t.forum_slug = ${forum.slug})  as result ';
+			let query = 'SELECT u.email, u.nickname, u.fullname, u.about, u.id ' +
+				'FROM forum_user fu ' +
+				'JOIN users u ON u.id = fu.user_id ' +
+				'WHERE fu.forum_slug = ${forum.slug} ';
 
 			if (params.desc && params.desc === 'true') {
 				if (params.since) {
-					query += 'WHERE result.nickname < ${params.since} ';
+					query += 'AND u.nickname < ${params.since} ';
 				}
-				query += 'ORDER BY result.nickname DESC ';
+				query += 'ORDER BY u.nickname DESC ';
 			} else {
 				if (params.since) {
-					query += 'WHERE result.nickname > ${params.since} ';
+					query += 'AND u.nickname > ${params.since} ';
 				}
-				query += 'ORDER BY result.nickname ';
+				query += 'ORDER BY u.nickname ';
 			}
 
 			if (params.limit) {

@@ -17,7 +17,7 @@ class serviceModel {
 	}
 
 	static async clear() {
-		return await db.any('TRUNCATE votes, posts, threads, forums, users');
+		return await db.any('TRUNCATE votes, posts, threads, forums, users, forum_user');
 	}
 }
 

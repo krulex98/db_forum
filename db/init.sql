@@ -14,6 +14,8 @@ CREATE TABLE users (
     about TEXT
 );
 
+CREATE INDEX users__nickname ON users(id);
+
 CREATE TABLE forums (
     id SERIAL PRIMARY KEY,
     slug CITEXT NOT NULL UNIQUE,
@@ -22,6 +24,16 @@ CREATE TABLE forums (
     title TEXT NOT NULL,
     username CITEXT REFERENCES users (nickname) NOT NULL
 );
+
+CREATE INDEX forums__slug ON forums(slug);
+
+CREATE TABLE forum_user (
+    forum_slug CITEXT,
+    user_id INTEGER,
+    PRIMARY KEY (forum_slug, user_id)
+);
+
+CREATE INDEX forum_user__slug ON forum_user(forum_slug);
 
 CREATE TABLE threads (
     id SERIAL PRIMARY KEY,
@@ -34,10 +46,16 @@ CREATE TABLE threads (
     votes INTEGER DEFAULT 0
 );
 
+CREATE INDEX threads__forum_created ON threads(forum_slug, created);
+
 CREATE OR REPLACE FUNCTION insertThread()
 RETURNS TRIGGER AS
 $BODY$
 BEGIN
+    INSERT INTO forum_user (forum_slug, user_id)
+    VALUES (new.forum_slug, (SELECT id FROM users WHERE nickname = new.username))
+    ON CONFLICT DO NOTHING;
+
     UPDATE forums SET threads = threads + 1
     WHERE slug = new.forum_slug;
     RETURN new;
@@ -60,6 +78,8 @@ CREATE TABLE posts (
     parent_id INTEGER REFERENCES posts (id),
     thread_id INTEGER REFERENCES threads (id) NOT NULL
 );
+
+CREATE INDEX posts__thread_id_created ON posts(thread_id, id, created);
 
 CREATE TABLE votes (
     id SERIAL PRIMARY KEY,

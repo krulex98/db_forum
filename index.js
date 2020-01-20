@@ -4,6 +4,12 @@ const app = express();
 
 app.use(morgan('dev'));
 
+app.use((req, res, next) => {
+	const startAt = Date.now();
+	next();
+	console.log(req.url, `${((+Date.now() - +startAt)/ 1000).toFixed(3)}ms`);
+});
+
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
 

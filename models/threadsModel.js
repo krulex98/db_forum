@@ -63,7 +63,29 @@ class threadsModel {
 		} catch (error) {
 			console.log(error);
 		}
+
+		try {
+			await this.addForumUser(posts, thread);
+		} catch (error) {
+			console.log(error);
+		}
+
 		return savedPosts;
+	}
+
+	static async addForumUser(posts, thread) {
+		let query = 'INSERT INTO forum_user(forum_slug, user_id) VALUES ';
+
+		posts.forEach((post, index) => {
+			if (index !== 0) {
+				query += ' , ';
+			}
+			query += ` ('${thread.forum_slug}', (SELECT id FROM users WHERE nickname = '${post.author}')) `;
+		});
+
+		query += ' ON CONFLICT DO NOTHING ';
+		console.log(query);
+		await db.manyOrNone(query);
 	}
 
 	static async getDetails(slugOrId) {
