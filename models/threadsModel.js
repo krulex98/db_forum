@@ -35,7 +35,7 @@ class threadsModel {
 
 			query += ` ('${user.nickname}', '${post.message}', ${thread.id}, `;
 			if (!post.parent) {
-				query += `${post.parent})`;
+				query += `NULL )`;
 			} else {
 				try {
 					const parentPost = await db.one('SELECT * FROM posts WHERE id = ${post.parent} AND thread_id = ${thread.id}',
@@ -229,37 +229,33 @@ class threadsModel {
 	}
 
 	static async getPostsTree(thread, params) {
-		let query = 'WITH RECURSIVE recursia AS ( ' +
-			'SELECT username as author, created, id, isedited, message, parent_id as parent, thread_id as thread, ARRAY [id] as path ' +
-			'FROM posts ' +
-			'WHERE parent_id IS NULL AND thread_id = ${thread.id} ' +
-			'UNION ' +
-			'SELECT posts.username as author, posts.created, posts.id, posts.isedited, posts.message, posts.parent_id as parent, ' +
-			'posts.thread_id as thread, array_append(recursia.path, posts.id) as path ' +
-			'FROM posts ' +
-			'JOIN recursia ' +
-			'ON posts.parent_id = recursia.id ' +
-			') ' +
-			'SELECT recursia.id, recursia.message, recursia.created, recursia.parent, recursia.thread, recursia.author ' +
-			'FROM recursia ';
+		let query = 'SELECT posts.username as author, posts.created, posts.id, posts.isedited, posts.message, ' +
+			'posts.parent_id as parent, posts.path, posts.thread_id as thread ' +
+			'FROM posts ';
 
-		if (params.desc && params.desc === 'true') {
-			if (params.since) {
-				query += 'WHERE recursia.path  < (SELECT path FROM recursia WHERE id = ${since}) ';
+		if (params.since) {
+			if (params.desc && params.desc === 'true') {
+				query += 'JOIN posts p ON p.id = ${since} ' +
+					'WHERE posts.path <  p.path ';
+
+			} else {
+				query += 'JOIN posts p ON p.id = ${since} ' +
+					'WHERE posts.path  > p.path ';
 			}
-			query += 'ORDER BY recursia.path DESC ';
+			query += 'AND posts.thread_id = ${thread.id} ORDER BY posts.path ';
 		} else {
-			if (params.since) {
-				query += 'WHERE recursia.path  > (SELECT path FROM recursia WHERE id = ${since}) ';
-			}
-
-			query += 'ORDER BY recursia.path ';
+			query += 'WHERE thread_id = ${thread.id} ORDER BY path ';
 		}
 
+		if (params.desc && params.desc === 'true') {
+			query += ' DESC ';
+		}
 
 		if (params.limit) {
 			query += 'LIMIT ${params.limit}';
 		}
+
+		console.log(query);
 
 		return await db.manyOrNone(query, {thread: thread, params: params, since: +params.since});
 	}
@@ -267,30 +263,24 @@ class threadsModel {
 	static async getPostsParentTree(thread, params) {
 		const limit = +params.limit || 10000;
 
-		let query = 'WITH RECURSIVE recursia AS ( ' +
-			'    SELECT username as author, created, id, isedited, message, parent_id as parent, ' +
-			'           thread_id as thread, ARRAY [id] as path, ' +
-			'           dense_rank() over (ORDER BY id ' + (params.desc === 'true' ? ' DESC ' : '') + ' ) as rank ' +
-			'    FROM posts ' +
-			'    WHERE parent_id IS NULL AND thread_id = ${thread.id} ' +
-			'    UNION ' +
-			'    SELECT posts.username as author, posts.created, posts.id, posts.isedited, posts.message, ' +
-			'           posts.parent_id as parent, posts.thread_id as thread, array_append(recursia.path, posts.id) as path, ' +
-			'           recursia.rank ' +
-			'    FROM posts ' +
-			'    JOIN recursia ON posts.parent_id = recursia.id ' +
+		let query = 'WITH ranks AS ( ' +
+			'    SELECT posts.username as author, posts.created, posts.id, posts.isedited, posts.message, posts.parent_id as parent, ' +
+			'           posts.thread_id as thread, posts.path, ' +
+			'           dense_rank() over (ORDER BY path[1] ' + (params.desc === 'true' ? ' DESC ' : '') + ' ) as rank ' +
+			'    FROM posts' +
+			'    WHERE posts.thread_id = ${thread.id} ' +
 			') ' +
-			'SELECT recursia.id, recursia.message, recursia.created, recursia.parent, recursia.thread, recursia.author, recursia.rank, recursia.path ' +
-			'FROM recursia ';
+			'SELECT ranks.id, ranks.message, ranks.created, ranks.parent, ranks.thread, ranks.author, ranks.rank, ranks.path ' +
+			'FROM ranks ';
 
 		if (params.since) {
-			query += 'JOIN recursia r ON r.id = ${since} ' +
-				'WHERE recursia.rank <= ${limit} + r.rank ' +
-				'AND (recursia.rank > r.rank OR recursia.rank = r.rank AND recursia.path > r.path) ' +
-				'ORDER BY recursia.path[1]' + (params.desc === 'true' ? ' DESC ' : '') + ', array_remove(recursia.path, recursia.path[1])';
+			query += 'JOIN ranks r ON r.id = ${since} ' +
+				'WHERE ranks.rank <= ${limit} + r.rank ' +
+				'AND (ranks.rank > r.rank OR ranks.rank = r.rank AND ranks.path > r.path) ' +
+				'ORDER BY ranks.path[1]' + (params.desc === 'true' ? ' DESC ' : '') + ', array_remove(ranks.path, ranks.path[1])';
 		} else {
-			query += 'WHERE recursia.rank <= ${limit} ' +
-				'ORDER BY recursia.path[1] '  + (params.desc === 'true' ? ' DESC ' : '') + ', array_remove(recursia.path, recursia.path[1])';
+			query += 'WHERE ranks.rank <= ${limit} ' +
+				'ORDER BY ranks.path[1] '  + (params.desc === 'true' ? ' DESC ' : '') + ', array_remove(ranks.path, ranks.path[1])';
 		}
 
 		console.log(query);

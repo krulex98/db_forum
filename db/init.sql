@@ -76,8 +76,31 @@ CREATE TABLE posts (
     isEdited BOOLEAN DEFAULT FALSE,
     message TEXT,
     parent_id INTEGER REFERENCES posts (id),
-    thread_id INTEGER REFERENCES threads (id) NOT NULL
+    thread_id INTEGER REFERENCES threads (id) NOT NULL,
+    path INTEGER ARRAY
 );
+
+CREATE OR REPLACE FUNCTION insertPost()
+RETURNS TRIGGER AS
+$BODY$
+    BEGIN
+        IF new.parent_id IS null THEN
+            UPDATE posts SET path = ARRAY[new.id]
+            WHERE id = new.id;
+        ELSE
+            UPDATE posts SET path = array_append((SELECT path FROM posts WHERE id = new.parent_id), new.id)
+            WHERE id = new.id;
+        END IF;
+        RETURN new;
+    END;
+$BODY$
+LANGUAGE plpgsql;
+
+CREATE TRIGGER insertPost
+AFTER insert
+ON posts
+FOR EACH ROW
+EXECUTE PROCEDURE insertPost();
 
 CREATE INDEX posts__thread_id_created ON posts(thread_id, id, created);
 
