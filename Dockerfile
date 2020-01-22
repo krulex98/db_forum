@@ -59,4 +59,4 @@ EXPOSE 5000
 # Запускаем PostgreSQL и сервер
 ENV PGPASSWORD docker
 
-CMD service postgresql start && psql -h localhost -U docker -d docker -f db/init.sql && npm start
+CMD service postgresql start && psql -h localhost -U docker -d docker -f db/init.sql && npm run docker
