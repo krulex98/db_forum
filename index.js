@@ -1,33 +1,38 @@
 const express = require('express');
+const cluster = require('express-cluster');
 const morgan = require('morgan');
-const app = express();
 
-app.use(morgan('dev'));
+cluster(function(worker) {
+	const app = express();
 
-app.use((req, res, next) => {
-	const startAt = Date.now();
-	next();
-	console.log(req.url, `${((+Date.now() - +startAt)/ 1000).toFixed(3)}s`);
-});
+	app.use(morgan('dev'));
 
-const bodyParser = require('body-parser');
-app.use(bodyParser.json());
+	app.use((req, res, next) => {
+		const startAt = Date.now();
+		next();
+		console.log(req.url, `${((+Date.now() - +startAt)/ 1000).toFixed(3)}s`);
+	});
 
-const userRouter = require('./router/userRouter');
-app.use('/api/user', userRouter);
+	const bodyParser = require('body-parser');
+	app.use(bodyParser.json());
 
-const forumRouter = require('./router/forumRouter');
-app.use('/api/forum', forumRouter);
+	const userRouter = require('./router/userRouter');
+	app.use('/api/user', userRouter);
 
-const threadRouter = require('./router/threadRouter');
-app.use('/api/thread', threadRouter);
+	const forumRouter = require('./router/forumRouter');
+	app.use('/api/forum', forumRouter);
 
-const postRouter = require('./router/postRouter');
-app.use('/api/post', postRouter);
+	const threadRouter = require('./router/threadRouter');
+	app.use('/api/thread', threadRouter);
 
-const serviceRouter = require('./router/serviceRouter');
-app.use('/api/service', serviceRouter);
+	const postRouter = require('./router/postRouter');
+	app.use('/api/post', postRouter);
 
-app.listen(5000, function () {
-	console.log('Example app listening on port 5000!');
+	const serviceRouter = require('./router/serviceRouter');
+	app.use('/api/service', serviceRouter);
+
+	const port = 5000;
+	return app.listen(port, function () {
+		console.log(`Example app listening on port ${port} with worker ${worker.id}`);
+	});
 });

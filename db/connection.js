@@ -1,6 +1,6 @@
 const pgp = require('pg-promise');
 
-/*
+
 const connection = {
 	host: '127.0.0.1',
 	port: 5432,
@@ -8,9 +8,9 @@ const connection = {
 	user: 'krulex',
 	password: 'admin123'
 };
-*/
 
-const connection = {
+
+const connectionDocker = {
 	host: '127.0.0.1',
 	port: 5432,
 	database: 'docker',
